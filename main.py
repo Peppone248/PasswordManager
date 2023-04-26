@@ -1,5 +1,6 @@
 import random
 import string
+import json
 from tkinter import *
 from tkinter import messagebox
 
@@ -19,19 +20,47 @@ def generate_psw():
 
 # ---------------------------- SAVE PASSWORD ------------------------------- #
 def save():
+    website = input_site.get()
+    email = input_mail.get()
+    psw = input_psw.get()
+    new_data = {
+        website: {
+            "email": email,
+            "password": psw,
+        }
+    }
     if len(input_psw.get()) == 0 or len(input_site.get()) == 0:
         messagebox.showinfo(title="WARNING", message="Fill the fields to continue!")
     else:
-        is_ok = messagebox.askokcancel(title=input_site.get(),
-                                       message=f"There are the credentials entered: \nEmail: {input_mail.get()}"
-                                               f"\nPassword: {input_psw.get()} \n Are you sure?")
+        try:
+            with open("data.json", 'r') as f:
+                # Read old data
+                data = json.load(f)
+        except FileNotFoundError:
+            with open("data.json", 'w') as f:
+                json.dump(new_data, f)
+        else:
+            # Update old data with new
+            data.update(new_data)
+            with open("data.json", 'w') as f:
+                # Write new update date
+                json.dump(data, f)
+        finally:
+            input_site.delete(0, END)
+            input_mail.delete(0, END)
+            input_psw.delete(0, END)
 
-        if is_ok:
-            with open("data.txt", 'a+') as f:
-                f.write(f"{input_site.get()} , {input_mail.get()} , {input_psw.get()}\n")
-                input_site.delete(0, END)
-                input_mail.delete(0, END)
-                input_psw.delete(0, END)
+
+# ---------------------------- FIND PASSWORD ------------------------------- #
+
+def find_password():
+    site = input_site.get()
+    with open("data.json") as file:
+        data = json.load(file)
+        if site in data:
+            email = data[site]["email"]
+            psw = data[site]["password"]
+            messagebox.showinfo(title="Information", message=f"Email: {email}\nPassword: {psw}")
 
 
 # ---------------------------- UI SETUP ------------------------------- #
@@ -67,10 +96,13 @@ input_psw = Entry(width=35)
 input_psw.grid(column=1, row=3, columnspan=2)
 
 # BUTTONS
-add_btn = Button(text="Add", width=36, command=save)
+add_btn = Button(text="Add", width=35, command=save)
 add_btn.grid(column=1, row=6, columnspan=2)
 
-generate_psw_btn = Button(text="Generate Password", command=generate_psw)
-generate_psw_btn.grid(column=1, row=4)
+generate_psw_btn = Button(text="Generate Password", width=35, command=generate_psw)
+generate_psw_btn.grid(column=1, row=4, columnspan=2)
+
+search_btn = Button(text="Search", width=15, command=find_password)
+search_btn.grid(column=3, row=1)
 
 window.mainloop()
